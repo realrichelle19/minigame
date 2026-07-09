@@ -7,6 +7,7 @@ import BottomNavBar from '../components/BottomNavBar';
 export default function GameScreen({ navigation }) {
   const { 
     currentVillain, 
+    currentMissionId,
     currentRoundIndex, 
     score, 
     totalRounds, 
@@ -29,7 +30,11 @@ export default function GameScreen({ navigation }) {
   useEffect(() => {
     if (isGameOver) {
       if (gameWon) {
-        navigation.replace('Victory');
+        if (currentMissionId === 'toxic_spill') {
+          navigation.replace('Ranking');
+        } else {
+          navigation.replace('Investigations');
+        }
       } else {
         navigation.replace('Home');
       }

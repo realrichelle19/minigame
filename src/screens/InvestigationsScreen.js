@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } fr
 import Header from '../components/Header';
 import BottomNavBar from '../components/BottomNavBar';
 import { GameContext } from '../context/GameContext';
+import { Ionicons } from '@expo/vector-icons';
 
 const investigations = [
   {
@@ -12,7 +13,7 @@ const investigations = [
     description: "Trace the chemicals back to Oscorp's secret lab before the city is flooded.",
     difficulty: 'HARD',
     color: '#b91c1c',
-    points: 800
+    points: 750
   },
   {
     id: 2,
@@ -21,7 +22,7 @@ const investigations = [
     description: 'A high-tech thief is hacking the central bank. Stop the transfer now.',
     difficulty: 'MEDIUM',
     color: '#3b82f6', // Blue
-    points: 500
+    points: 450
   },
   {
     id: 3,
@@ -35,7 +36,7 @@ const investigations = [
 ];
 
 export default function InvestigationsScreen({ navigation }) {
-  const { restartGame } = useContext(GameContext);
+  const { restartGame, completedMissions = [], isAdmin } = useContext(GameContext);
 
   const handleInvestigate = (missionId) => {
     restartGame(missionId);
@@ -50,12 +51,21 @@ export default function InvestigationsScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.container}>
         
         <View style={styles.titleContainer}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back-outline" size={24} color="#000" />
+          </TouchableOpacity>
           <Text style={styles.pageTitle}>ACTIVE INVESTIGATIONS</Text>
           <View style={styles.titleLine} />
         </View>
 
-        {investigations.map((inv) => (
-          <View key={inv.id} style={styles.cardShadow}>
+        {investigations.map((inv) => {
+          const isCompleted = completedMissions.includes(inv.missionId);
+          return (
+            <View key={inv.id} style={styles.cardShadow}>
             <View style={styles.card}>
               
               {/* Image Placeholder */}
@@ -71,17 +81,23 @@ export default function InvestigationsScreen({ navigation }) {
               <View style={styles.cardFooter}>
                 <Text style={styles.points}>+{inv.points} PTS</Text>
                 <TouchableOpacity 
-                  style={styles.investigateBtn}
-                  onPress={() => handleInvestigate(inv.missionId)}
-                  activeOpacity={0.8}
+                  style={[styles.investigateBtn, isCompleted && styles.disabledBtn]}
+                  onPress={() => !isCompleted && handleInvestigate(inv.missionId)}
+                  activeOpacity={isCompleted ? 1 : 0.8}
+                  disabled={isCompleted}
                 >
-                  <Text style={styles.investigateBtnText}>INVESTIGATE</Text>
+                  <Text style={styles.investigateBtnText}>
+                    {isCompleted ? 'INVESTIGATED' : 'INVESTIGATE'}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
             </View>
           </View>
-        ))}
+          );
+        })}
+
+
 
       </ScrollView>
       <BottomNavBar activeTab="MISSIONS" navigation={navigation} />
@@ -181,10 +197,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
+  disabledBtn: {
+    backgroundColor: '#888',
+  },
   investigateBtnText: {
     color: '#fff',
     fontWeight: '900',
     fontSize: 14,
     letterSpacing: 1,
+  },
+
+  backBtn: {
+    marginRight: 10,
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#fff',
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
   }
 });

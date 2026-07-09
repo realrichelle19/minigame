@@ -41,8 +41,8 @@ export const missions = {
         points: 150
       },
       {
-        question: "What gets wetter the more it dries?",
-        answer: "towel",
+        question: "I have no wings, but I can fly. I have no eyes, but I can cry. Wherever I go, darkness follows me. What am I?",
+        answer: "smoke",
         points: 150
       }
     ]

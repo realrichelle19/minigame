@@ -1,28 +1,97 @@
-import React, { useContext } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Share } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Share, Modal, Pressable, Platform } from 'react-native';
 import { GameContext } from '../context/GameContext';
 import Header from '../components/Header';
 import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RankingScreen({ navigation }) {
-  const { score, totalRounds, victimsSaved, restartGame } = useContext(GameContext);
+  const { score, totalRounds, victimsSaved, promoteToNextLevel, completedMissions = [], gameElapsedTime, teamProfile, isAdmin, adminName } = useContext(GameContext);
 
-  // Fallbacks if player hasn't completed a mission yet to match the design spec exactly
-  const displayScore = score || 8500;
-  const displayVictims = victimsSaved || 15;
-  const displayVillainsCount = score > 0 ? Math.min(totalRounds, Math.ceil(score / 1500)) : 6; 
+  const numLocked = completedMissions.length;
+  let displayScore = 0;
+  let displayVictims = 0;
+  let displayVillainsCount = 0;
+  let displayRank = '--';
 
-  const handleReplay = () => {
-    restartGame();
-    navigation.navigate('Game');
+  if (numLocked === 3) {
+    displayScore = 1600;
+    displayVictims = 60;
+    displayVillainsCount = 3;
+    displayRank = 'AVENGERS RECRUIT';
+  } else if (numLocked === 2) {
+    displayScore = 850;
+    displayVictims = 30;
+    displayVillainsCount = 2;
+    displayRank = 'AVENGERS RECRUIT';
+  } else if (numLocked === 1) {
+    displayScore = 400;
+    displayVictims = 12;
+    displayVillainsCount = 1;
+    displayRank = 'AVENGERS RECRUIT';
+  } else {
+    // Default fallback (none locked)
+    displayScore = 0;
+    displayVictims = 0;
+    displayVillainsCount = 0;
+    displayRank = '--';
+  }
+
+  const isRound3Cleared = completedMissions.includes('toxic_spill');
+  const titleText = isRound3Cleared ? 'THE VILLAINS ARE DEFEATED' : 'RESUME FIGHTING THE VILLAINS';
+  const statusText = isRound3Cleared ? 'MISSION ACCOMPLISHED' : 'MISSION PENDING';
+
+  const formatTime = (seconds) => {
+    if (!seconds && seconds !== 0) return '--:--';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleShare = async () => {
+  const displayTime = gameElapsedTime;
+
+  let btnText = 'DEFEAT ALL THE VILLAINS';
+  if (numLocked === 3) {
+    btnText = 'PROMOTED TO NEXT LEVEL';
+  } else if (numLocked === 1 || numLocked === 2) {
+    btnText = 'RESUME THE MISSION';
+  }
+
+  const handleReplay = () => {
+    if (numLocked === 3) {
+      promoteToNextLevel();
+    }
+    navigation.navigate('Investigations');
+  };
+
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  const handleShare = () => {
+    setShareModalVisible(true);
+  };
+
+  const triggerNativeShare = async () => {
     try {
+      const teamName = teamProfile?.teamName || 'ANONYMOUS VIGILANTES';
+      const teamLeader = teamProfile?.leaderName || 'N/A';
+      const membersCount = teamProfile?.membersCount || '0';
+      const timeStr = displayTime !== null && displayTime !== undefined ? formatTime(displayTime) : '--:--';
+      
+      const reportText = `============= CLASSIFIED MISSION REPORT =============
+TEAM NAME: ${teamName}
+TEAM LEADER: ${teamLeader}
+TEAM SIZE: ${membersCount} MEMBER(S)
+STATUS: ${statusText}
+TOTAL POINTS: ${displayScore} PTS
+VILLAINS CAPTURED: ${displayVillainsCount}/3
+SPEEDRUN DURATION: ${timeStr}
+RANK ASSIGNED: ${displayRank}
+=====================================================`;
+      
       await Share.share({
-        message: `I defeated the Sinister Six in the Web of Riddles game! Scored ${displayScore} points and saved ${displayVictims} victims! Can you beat my rank? 🕷️🕸️`,
+        message: reportText,
       });
+      setShareModalVisible(false);
     } catch (error) {
       console.log('Share error:', error.message);
     }
@@ -34,18 +103,22 @@ export default function RankingScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.container}>
         
         {/* Title Area */}
-        <Text style={styles.mainTitle}>SINISTER SIX DEFEATED!</Text>
+        <Text style={styles.mainTitle}>{titleText}</Text>
         <View style={styles.badgeShadow}>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>MISSION ACCOMPLISHED</Text>
+            <Text style={styles.badgeText}>{statusText}</Text>
           </View>
         </View>
 
         {/* Graphic Box */}
         <View style={styles.graphicShadow}>
           <View style={styles.graphicBox}>
-            <Text style={styles.graphicText}>MISSION ACCOMPLISHED</Text>
-            <Text style={styles.graphicSubText}>Fantastic work. Your goals have been achieved.</Text>
+            <Text style={styles.graphicText}>{statusText}</Text>
+            <Text style={styles.graphicSubText}>
+              {isRound3Cleared 
+                ? 'Fantastic work. Your goals have been achieved.' 
+                : 'Defeat all villains to save the city.'}
+            </Text>
             {/* THWIP Star graphic */}
             <View style={styles.thwipStar}>
               <Text style={styles.thwipText}>THWIP!</Text>
@@ -67,11 +140,11 @@ export default function RankingScreen({ navigation }) {
 
             <View style={styles.villainsRow}>
               <Text style={styles.label}>VILLAINS DEFEATED</Text>
-              <Text style={styles.villainsCount}>{displayVillainsCount}/{totalRounds || 6}</Text>
+              <Text style={styles.villainsCount}>{displayVillainsCount}/3</Text>
             </View>
             
             <View style={styles.threatBar}>
-              {Array.from({ length: 6 }).map((_, idx) => (
+              {Array.from({ length: 3 }).map((_, idx) => (
                 <View 
                   key={idx} 
                   style={[
@@ -81,6 +154,13 @@ export default function RankingScreen({ navigation }) {
                 />
               ))}
             </View>
+
+            {displayTime !== null && displayTime !== undefined && (
+              <View style={styles.timeRow}>
+                <Text style={styles.label}>ELAPSED TIME</Text>
+                <Text style={styles.timeValue}>{formatTime(displayTime)}</Text>
+              </View>
+            )}
 
             <View style={styles.statsRow}>
               <View style={[styles.statBoxShadow, { flex: 1, marginRight: 15 }]}>
@@ -93,7 +173,7 @@ export default function RankingScreen({ navigation }) {
               <View style={[styles.rankBoxShadow, { flex: 1 }]}>
                 <View style={styles.rankBox}>
                   <Text style={styles.rankBoxLabel}>NEW RANK</Text>
-                  <Text style={styles.rankBoxValue}>AVENGERS RECRUIT</Text>
+                  <Text style={styles.rankBoxValue}>{displayRank}</Text>
                 </View>
               </View>
             </View>
@@ -108,7 +188,7 @@ export default function RankingScreen({ navigation }) {
           activeOpacity={0.8}
         >
           <View style={styles.replayBtn}>
-            <Text style={styles.replayBtnText}>REPLAY MISSION</Text>
+            <Text style={styles.replayBtnText}>{btnText}</Text>
           </View>
         </TouchableOpacity>
 
@@ -124,6 +204,158 @@ export default function RankingScreen({ navigation }) {
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* Share Report Modal (Simulating image layout) */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={shareModalVisible}
+        onRequestClose={() => setShareModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlayCenter} onPress={() => setShareModalVisible(false)}>
+          <Pressable>
+            <View style={styles.shareReportShadow}>
+              <View style={styles.shareReportCard}>
+                  
+                  {/* Card Header */}
+                  <View style={styles.reportHeader}>
+                    <Text style={styles.reportTitle}>MISSION REPORT CARD</Text>
+                    <TouchableOpacity onPress={() => setShareModalVisible(false)}>
+                      <Ionicons name="close" size={32} color="#000" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.reportDivider} />
+
+                  {/* Stamp Graphic */}
+                  <View style={styles.classifiedStamp}>
+                    <Text style={styles.classifiedStampText}>CLASSIFIED</Text>
+                  </View>
+
+                  {/* Team Profile details */}
+                  <View style={styles.reportSection}>
+                    <Text style={styles.reportLabel}>VIGILANTE GROUP</Text>
+                    <Text style={styles.reportValue}>
+                      {isAdmin ? 'Admin' : (teamProfile?.teamName || 'ANONYMOUS')}
+                    </Text>
+                  </View>
+
+                  {isAdmin ? (
+                    <View style={styles.reportRow}>
+                      <View style={styles.reportHalf}>
+                        <Text style={styles.reportLabel}>ADMIN NAME</Text>
+                        <Text style={styles.reportValue}>{adminName || 'CN'}</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.reportRow}>
+                      <View style={styles.reportHalf}>
+                        <Text style={styles.reportLabel}>TEAM LEADER</Text>
+                        <Text style={styles.reportValue}>{teamProfile?.leaderName || 'N/A'}</Text>
+                      </View>
+                      <View style={styles.reportHalf}>
+                        <Text style={styles.reportLabel}>ACTIVE MEMBERS</Text>
+                        <Text style={styles.reportValue}>{teamProfile?.membersCount || '0'}</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  <View style={styles.reportDividerDotted} />
+
+                  {/* Mission Log details */}
+                  <View style={styles.reportRow}>
+                    <View style={styles.reportHalf}>
+                      <Text style={styles.reportLabel}>TOTAL POINTS</Text>
+                      <Text style={styles.reportValueHighlight}>{displayScore} PTS</Text>
+                    </View>
+                    <View style={styles.reportHalf}>
+                      <Text style={styles.reportLabel}>CLEAR TIME</Text>
+                      <Text style={styles.reportValueHighlight}>
+                        {displayTime !== null && displayTime !== undefined ? formatTime(displayTime) : '--:--'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.reportRow}>
+                    <View style={styles.reportHalf}>
+                      <Text style={styles.reportLabel}>VILLAINS CAPTURED</Text>
+                      <Text style={styles.reportValue}>{displayVillainsCount}/3</Text>
+                    </View>
+                    <View style={styles.reportHalf}>
+                      <Text style={styles.reportLabel}>RANK ASSIGNED</Text>
+                      <Text style={styles.reportValue}>{displayRank}</Text>
+                    </View>
+                  </View>
+
+                  {/* Action buttons */}
+                  <TouchableOpacity 
+                    style={styles.actionBtnShadow}
+                    onPress={() => {
+                      try {
+                        const groupName = isAdmin ? 'Admin' : (teamProfile?.teamName || 'ANONYMOUS VIGILANTES');
+                        const timeStr = displayTime !== null && displayTime !== undefined ? formatTime(displayTime) : '--:--';
+
+                        let reportText = '';
+                        if (isAdmin) {
+                          reportText = `============= CLASSIFIED MISSION REPORT =============
+VIGILANTE GROUP: Admin
+ADMIN NAME: ${adminName || 'CN'}
+STATUS: ${statusText}
+TOTAL POINTS: ${displayScore} PTS
+VILLAINS CAPTURED: ${displayVillainsCount}/3
+SPEEDRUN DURATION: ${timeStr}
+RANK ASSIGNED: ${displayRank}
+=====================================================`;
+                        } else {
+                          const teamLeader = teamProfile?.leaderName || 'N/A';
+                          const membersCount = teamProfile?.membersCount || '0';
+                          reportText = `============= CLASSIFIED MISSION REPORT =============
+TEAM NAME: ${groupName}
+TEAM LEADER: ${teamLeader}
+TEAM SIZE: ${membersCount} MEMBER(S)
+STATUS: ${statusText}
+TOTAL POINTS: ${displayScore} PTS
+VILLAINS CAPTURED: ${displayVillainsCount}/3
+SPEEDRUN DURATION: ${timeStr}
+RANK ASSIGNED: ${displayRank}
+=====================================================`;
+                        }
+
+                        if (Platform.OS === 'web') {
+                          const element = document.createElement("a");
+                          const file = new Blob([reportText], { type: 'text/plain' });
+                          element.href = URL.createObjectURL(file);
+                          element.download = `mission_report_${groupName.replace(/\s+/g, '_')}.txt`;
+                          document.body.appendChild(element);
+                          element.click();
+                          document.body.removeChild(element);
+                        } else {
+                          Share.share({
+                            message: reportText,
+                            title: 'Classified Mission Report',
+                          });
+                        }
+                      } catch (err) {
+                        console.log('Download error:', err.message);
+                      }
+                      
+                      setShareModalVisible(false);
+                      navigation.navigate('Ratings');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.actionBtn}>
+                      <Ionicons name="star" size={20} color="#fff" style={styles.btnIcon} />
+                      <Text style={styles.actionBtnText}>RATE CAMPUS QUEST '26</Text>
+                    </View>
+                  </TouchableOpacity>
+
+                </View>
+              </View>
+            </Pressable>
+          </Pressable>
+      </Modal>
+
       <BottomNavBar activeTab="RANKING" navigation={navigation} />
     </SafeAreaView>
   );
@@ -272,6 +504,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 20,
+    backgroundColor: '#f5f5f5',
+    padding: 12,
+    borderWidth: 3,
+    borderColor: '#000',
+  },
+  timeValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#b91c1c',
+    fontStyle: 'italic',
+  },
   threatSegment: {
     flex: 1,
     height: 15,
@@ -374,5 +623,117 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 22,
     letterSpacing: 1,
+  },
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  shareReportShadow: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#000',
+  },
+  shareReportCard: {
+    backgroundColor: '#fff',
+    borderWidth: 4,
+    borderColor: '#000',
+    padding: 20,
+    transform: [{ translateX: -6 }, { translateY: -6 }],
+  },
+  reportHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  reportTitle: {
+    fontSize: 22,
+    fontWeight: '950',
+    color: '#000',
+    letterSpacing: 0.5,
+    fontStyle: 'italic',
+  },
+  reportDivider: {
+    height: 4,
+    backgroundColor: '#000',
+    marginVertical: 15,
+  },
+  reportDividerDotted: {
+    height: 2,
+    borderWidth: 1,
+    borderColor: '#000',
+    borderStyle: 'dashed',
+    marginVertical: 15,
+  },
+  classifiedStamp: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    borderWidth: 3,
+    borderColor: '#dc2626',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    transform: [{ rotate: '15deg' }],
+    zIndex: 5,
+  },
+  classifiedStampText: {
+    color: '#dc2626',
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 1.5,
+  },
+  reportSection: {
+    marginBottom: 12,
+  },
+  reportRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  reportHalf: {
+    flex: 1,
+  },
+  reportLabel: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#666',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  reportValue: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#000',
+  },
+  reportValueHighlight: {
+    fontSize: 18,
+    fontWeight: '950',
+    color: '#b91c1c',
+    fontStyle: 'italic',
+  },
+  actionBtnShadow: {
+    backgroundColor: '#000',
+    marginTop: 15,
+  },
+  actionBtn: {
+    backgroundColor: '#b91c1c',
+    borderWidth: 3,
+    borderColor: '#000',
+    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ translateX: -4 }, { translateY: -4 }],
+  },
+  actionBtnText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 0.5,
+  },
+  btnIcon: {
+    marginRight: 8,
   }
 });
