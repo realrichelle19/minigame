@@ -1,18 +1,26 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { villains } from '../data/riddles';
+import { missions } from '../data/riddles';
 
 export const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
-  const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
+  const [currentMissionId, setCurrentMissionId] = useState('toxic_spill');
+  const [currentRiddleIndex, setCurrentRiddleIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [debt, setDebt] = useState(0);
   const [victimsSaved, setVictimsSaved] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
 
-  const currentVillain = villains[currentRoundIndex];
+  const currentMission = missions[currentMissionId];
+  const currentVillain = currentMission ? {
+    name: currentMission.villainName,
+    threatLevel: currentMission.threatLevel,
+    timer: currentMission.timer,
+    riddle: currentMission.riddles[currentRiddleIndex]
+  } : null;
 
   useEffect(() => {
     loadStats();
@@ -37,13 +45,18 @@ export const GameProvider = ({ children }) => {
 
   const answerQuestion = (isCorrect) => {
     if (isCorrect) {
-      const pointsEarned = currentVillain.points;
+      const mission = missions[currentMissionId];
+      const currentRiddle = mission.riddles[currentRiddleIndex];
+      const pointsEarned = currentRiddle.points;
       const newScore = score + pointsEarned;
       setScore(newScore);
-      setVictimsSaved(victimsSaved + currentVillain.victimsSaved);
+
+      // Save 3 victims on easy level, 5 on boss, etc.
+      const victimsPerCorrect = currentMissionId === 'rooftop_witness' ? 4 : 2;
+      setVictimsSaved(victimsSaved + victimsPerCorrect);
       
-      if (currentRoundIndex + 1 < villains.length) {
-        setCurrentRoundIndex(currentRoundIndex + 1);
+      if (currentRiddleIndex + 1 < mission.riddles.length) {
+        setCurrentRiddleIndex(currentRiddleIndex + 1);
       } else {
         setGameWon(true);
         setIsGameOver(true);
@@ -55,26 +68,34 @@ export const GameProvider = ({ children }) => {
   };
 
   const failRound = () => {
-    // Timer expired or failed heavily
-    const debtAdded = Math.floor(score / 2);
-    const newDebt = debt + debtAdded;
-    setDebt(newDebt);
-    saveStats(newDebt);
-    
-    // Reset round progress but keep debt
-    setCurrentRoundIndex(0);
-    setScore(0);
-    setVictimsSaved(0);
-    setIsGameOver(true);
-    setGameWon(false);
+    if (['rooftop_witness', 'vault_breaker', 'toxic_spill'].includes(currentMissionId)) {
+      // "restart the round for him" (reset current level progress, reset score, reload timer)
+      setCurrentRiddleIndex(0);
+      setScore(0);
+      setResetTrigger(prev => prev + 1); // trigger timer reset in UI
+    } else {
+      // Standard penalty/game over rules for other levels
+      const debtAdded = Math.floor(score / 2);
+      const newDebt = debt + debtAdded;
+      setDebt(newDebt);
+      saveStats(newDebt);
+      
+      setCurrentRiddleIndex(0);
+      setScore(0);
+      setVictimsSaved(0);
+      setIsGameOver(true);
+      setGameWon(false);
+    }
   };
 
-  const restartGame = () => {
-    setCurrentRoundIndex(0);
+  const restartGame = (missionId = 'toxic_spill') => {
+    setCurrentMissionId(missionId);
+    setCurrentRiddleIndex(0);
     setScore(0);
     setVictimsSaved(0);
     setIsGameOver(false);
     setGameWon(false);
+    setResetTrigger(prev => prev + 1);
   };
 
   const saveFinalStats = async (finalScore) => {
@@ -85,8 +106,8 @@ export const GameProvider = ({ children }) => {
       parsedStats.gamesPlayed += 1;
       parsedStats.gamesWon += 1;
       parsedStats.highestScore = Math.max(parsedStats.highestScore, finalScore);
-      parsedStats.totalVictimsSaved += victimsSaved + currentVillain.victimsSaved;
-      parsedStats.totalVillainsDefeated += villains.length;
+      parsedStats.totalVictimsSaved += victimsSaved + (currentMissionId === 'rooftop_witness' ? 4 : 2);
+      parsedStats.totalVillainsDefeated += 1;
       
       await AsyncStorage.setItem('stats', JSON.stringify(parsedStats));
     } catch (e) {
@@ -97,7 +118,8 @@ export const GameProvider = ({ children }) => {
   return (
     <GameContext.Provider value={{
       currentVillain,
-      currentRoundIndex,
+      currentMissionId,
+      currentRoundIndex: currentRiddleIndex,
       score,
       debt,
       victimsSaved,
@@ -106,7 +128,8 @@ export const GameProvider = ({ children }) => {
       answerQuestion,
       failRound,
       restartGame,
-      totalRounds: villains.length
+      resetTrigger,
+      totalRounds: currentMission ? currentMission.riddles.length : 1
     }}>
       {children}
     </GameContext.Provider>

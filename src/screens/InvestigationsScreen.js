@@ -7,6 +7,7 @@ import { GameContext } from '../context/GameContext';
 const investigations = [
   {
     id: 1,
+    missionId: 'toxic_spill',
     title: 'TOXIC SPILL RIDDLE',
     description: "Trace the chemicals back to Oscorp's secret lab before the city is flooded.",
     difficulty: 'HARD',
@@ -15,6 +16,7 @@ const investigations = [
   },
   {
     id: 2,
+    missionId: 'vault_breaker',
     title: 'VAULT BREAKER',
     description: 'A high-tech thief is hacking the central bank. Stop the transfer now.',
     difficulty: 'MEDIUM',
@@ -23,19 +25,20 @@ const investigations = [
   },
   {
     id: 3,
+    missionId: 'rooftop_witness',
     title: 'THE ROOFTOP WITNESS',
     description: "Find the informant hiding in Hell's Kitchen. Keep your eyes peeled.",
     difficulty: 'EASY',
     color: '#b91c1c',
-    points: 250
+    points: 400
   }
 ];
 
 export default function InvestigationsScreen({ navigation }) {
   const { restartGame } = useContext(GameContext);
 
-  const handleInvestigate = () => {
-    restartGame();
+  const handleInvestigate = (missionId) => {
+    restartGame(missionId);
     setTimeout(() => {
       navigation.navigate('Game');
     }, 100);
@@ -69,7 +72,7 @@ export default function InvestigationsScreen({ navigation }) {
                 <Text style={styles.points}>+{inv.points} PTS</Text>
                 <TouchableOpacity 
                   style={styles.investigateBtn}
-                  onPress={handleInvestigate}
+                  onPress={() => handleInvestigate(inv.missionId)}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.investigateBtnText}>INVESTIGATE</Text>

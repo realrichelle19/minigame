@@ -13,7 +13,8 @@ export default function GameScreen({ navigation }) {
     answerQuestion, 
     failRound,
     isGameOver,
-    gameWon
+    gameWon,
+    resetTrigger
   } = useContext(GameContext);
 
   const [answer, setAnswer] = useState('');
@@ -23,7 +24,7 @@ export default function GameScreen({ navigation }) {
     if (currentVillain) {
       setTimeLeft(currentVillain.timer);
     }
-  }, [currentVillain]);
+  }, [currentVillain?.name, resetTrigger]);
 
   useEffect(() => {
     if (isGameOver) {
@@ -59,7 +60,9 @@ export default function GameScreen({ navigation }) {
 
   if (isGameOver || !currentVillain) return null;
 
-  const segments = Array.from({ length: 6 }).map((_, i) => i < 5);
+  const filledSegments = currentVillain?.threatLevel === 'MINIMUM' ? 2 : 
+                         currentVillain?.threatLevel === 'MEDIUM' ? 4 : 6;
+  const segments = Array.from({ length: 6 }).map((_, i) => i < filledSegments);
   const potentialPenalty = Math.floor(score / 2);
 
   const Wrapper = Platform.OS === 'web' ? View : KeyboardAvoidingView;
@@ -95,7 +98,7 @@ export default function GameScreen({ navigation }) {
               <View style={styles.threatContainer}>
                 <View style={styles.threatHeader}>
                   <Text style={styles.threatLabel}>THREAT LEVEL:</Text>
-                  <Text style={styles.threatValue}>EXTREME</Text>
+                  <Text style={styles.threatValue}>{currentVillain.threatLevel}</Text>
                 </View>
                 <View style={styles.threatBar}>
                   {segments.map((isFilled, idx) => (
