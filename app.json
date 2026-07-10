@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "minigame",
+    "name": "Web of Riddles",
     "slug": "minigame",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,13 +15,19 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.rixhelle.minigame"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "93d808a3-37a8-4dba-ba22-856ccfca579d"
+      }
+    }
   }
 }
