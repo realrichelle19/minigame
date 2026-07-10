@@ -45,8 +45,14 @@ export default function HomeScreen({ navigation }) {
 
   const allTeamsSorted = [...rankedTeams, ...unrankedTeams];
 
-  // Calculate vigilanteStatsScore as 1600 minus timerResetPenalty
-  const vigilanteStatsScore = Math.max(0, 1600 - (timerResetPenalty || 0));
+  // Calculate vigilanteStatsScore dynamically based on locked rounds progression
+  let baseScore = 0;
+  const numLocked = completedMissions.length;
+  if (numLocked === 3) baseScore = 1600;
+  else if (numLocked === 2) baseScore = 850;
+  else if (numLocked === 1) baseScore = 400;
+
+  const vigilanteStatsScore = Math.max(0, baseScore - (timerResetPenalty || 0));
 
   return (
     <SafeAreaView style={styles.safeArea}>

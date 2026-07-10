@@ -283,6 +283,7 @@ export const GameProvider = ({ children }) => {
     
     setTimerResetPenalty(0);
     await AsyncStorage.setItem('timer_reset_penalty', '0');
+    await AsyncStorage.removeItem('admin_run_id');
 
     // If starting the 1st round (rooftop_witness), start the timer!
     if (missionId === 'rooftop_witness') {
@@ -308,6 +309,7 @@ export const GameProvider = ({ children }) => {
     setGameElapsedTime(null);
     await AsyncStorage.removeItem('game_start_time');
     await AsyncStorage.removeItem('game_elapsed_time');
+    await AsyncStorage.removeItem('admin_run_id');
 
     // Increment gamesPlayed for the active team
     if (teamProfile) {
@@ -364,6 +366,7 @@ export const GameProvider = ({ children }) => {
       setIsAdmin(false);
       await AsyncStorage.removeItem('team_profile');
       await AsyncStorage.removeItem('is_admin');
+      await AsyncStorage.removeItem('admin_run_id');
       setTimerResetPenalty(0);
       await AsyncStorage.setItem('timer_reset_penalty', '0');
       await promoteToNextLevel();
@@ -452,41 +455,66 @@ export const GameProvider = ({ children }) => {
         await AsyncStorage.setItem('completedMissions', JSON.stringify(newCompleted));
       }
 
+      // Calculate dynamic base score based on number of completed rounds
+      let baseScore = 0;
+      const numLocked = newCompleted.length;
+      if (numLocked === 3) baseScore = 1600;
+      else if (numLocked === 2) baseScore = 850;
+      else if (numLocked === 1) baseScore = 400;
+
+      const calculatedPoints = Math.max(0, baseScore - timerResetPenalty);
+
       // If completing the 3rd round (toxic_spill), save the timer!
       let elapsed = null;
       if (currentMissionId === 'toxic_spill' && gameStartTime) {
         elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
         setGameElapsedTime(elapsed);
         await AsyncStorage.setItem('game_elapsed_time', elapsed.toString());
+      }
 
-        let updatedTeams = [];
-        const calculatedPoints = Math.max(0, 1600 - timerResetPenalty);
-        if (isAdmin) {
+      // Update active team's points on the leaderboard
+      let updatedTeams = [];
+      if (isAdmin) {
+        const adminRunId = await AsyncStorage.getItem('admin_run_id') || ('admin_run_' + Date.now().toString(36));
+        await AsyncStorage.setItem('admin_run_id', adminRunId);
+
+        const existingAdminRun = teams.find(t => t.id === adminRunId);
+        if (existingAdminRun) {
+          updatedTeams = teams.map(t => t.id === adminRunId ? {
+            ...t,
+            points: calculatedPoints,
+            clearTime: elapsed || t.clearTime,
+            isCompleted: numLocked === 3
+          } : t);
+        } else {
           const newAdminRun = {
-            id: 'admin_run_' + Date.now().toString(36),
+            id: adminRunId,
             name: adminName || 'CN',
             clearTime: elapsed,
             points: calculatedPoints,
-            isCompleted: true,
+            isCompleted: numLocked === 3,
             isAdminRun: true,
             gamesPlayed: 1,
-            attempts: [elapsed]
+            attempts: elapsed ? [elapsed] : []
           };
           updatedTeams = [...teams, newAdminRun];
-        } else {
-          updatedTeams = teams.map(t => {
-            if (!t.isCompleted) {
-              const teamAttempts = [...(t.attempts || []), elapsed];
-              return { 
-                 ...t, 
-                 clearTime: elapsed,
-                 points: calculatedPoints,
-                 attempts: teamAttempts
-              };
-            }
-            return t;
-          });
         }
+      } else if (teamProfile) {
+        updatedTeams = teams.map(t => {
+          if (t.name === teamProfile.teamName) {
+            return {
+              ...t,
+              points: calculatedPoints,
+              clearTime: elapsed || t.clearTime,
+              isCompleted: numLocked === 3,
+              attempts: elapsed ? [...(t.attempts || []), elapsed] : (t.attempts || [])
+            };
+          }
+          return t;
+        });
+      }
+
+      if (updatedTeams.length > 0) {
         setTeams(updatedTeams);
         await AsyncStorage.setItem('registered_teams', JSON.stringify(updatedTeams));
         syncTeamsToSupabase(updatedTeams);
