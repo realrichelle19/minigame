@@ -69,7 +69,7 @@ export default function LeaderboardScreen({ navigation }) {
             
             return (
               <View key={t.id} style={styles.rankCardShadow}>
-                <View style={styles.rankCard}>
+                <View style={[styles.rankCard, t.isAdminRun && { backgroundColor: '#fef2f2' }]}>
                   
                   {/* Rank Badge & Team name */}
                   <View style={styles.rankCardHeader}>
@@ -77,14 +77,19 @@ export default function LeaderboardScreen({ navigation }) {
                       <View 
                         style={[
                           styles.rankBadge, 
-                          { backgroundColor: hasCleared ? getRankBadgeColor(idx) : '#e5e7eb' }
+                          { backgroundColor: t.isAdminRun ? '#ef4444' : (hasCleared ? getRankBadgeColor(idx) : '#e5e7eb') }
                         ]}
                       >
-                        <Text style={styles.rankBadgeText}>
-                          {hasCleared ? `#${idx + 1}` : 'U'}
+                        <Text style={[styles.rankBadgeText, t.isAdminRun && { color: '#fff' }]}>
+                          {t.isAdminRun ? 'A' : (hasCleared ? `#${idx + 1}` : 'U')}
                         </Text>
                       </View>
                       <Text style={styles.teamName}>{t.name}</Text>
+                      {t.isAdminRun && (
+                        <View style={styles.adminBadge}>
+                          <Text style={styles.adminBadgeText}>ADMIN RUN</Text>
+                        </View>
+                      )}
                     </View>
 
                     {/* Completion Status Badge */}
@@ -103,6 +108,13 @@ export default function LeaderboardScreen({ navigation }) {
                       <Text style={styles.statLabel}>BEST CLEAR TIME</Text>
                       <Text style={[styles.statValue, hasCleared ? styles.textHighlight : null]}>
                         {hasCleared ? formatTime(t.clearTime) : 'PENDING'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.statCol}>
+                      <Text style={styles.statLabel}>POINTS</Text>
+                      <Text style={[styles.statValue, t.isAdminRun ? styles.adminTextHighlight : styles.playerTextHighlight]}>
+                        {t.points !== undefined ? `${t.points} PTS` : 'N/A'}
                       </Text>
                     </View>
                     
@@ -344,5 +356,27 @@ const styles = StyleSheet.create({
   },
   deleteIcon: {
     marginRight: 6,
+  },
+  adminBadge: {
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: '#000',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginLeft: 12,
+  },
+  adminBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  adminTextHighlight: {
+    color: '#ef4444',
+    fontWeight: '900',
+  },
+  playerTextHighlight: {
+    color: '#1d4ed8',
+    fontWeight: '900',
   }
 });

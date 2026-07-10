@@ -18,8 +18,13 @@ export default function Header() {
 
   const handleLogout = () => {
     setProfileVisible(false);
+    const wasAdmin = isAdmin;
     logoutProfile();
-    navigation.replace('RoleSelection');
+    if (wasAdmin) {
+      navigation.replace('RoleSelection');
+    } else {
+      navigation.replace('Login');
+    }
   };
 
   return (

@@ -9,21 +9,29 @@ export default function RulesScreen({ navigation }) {
   const { isAdmin, resetRatings } = useContext(GameContext);
 
   const handleReset = () => {
-    Alert.alert(
-      'RESET ALL RATINGS',
-      'Are you sure you want to permanently delete all team feedback ratings?',
-      [
-        { text: 'CANCEL', style: 'cancel' },
-        { 
-          text: 'RESET', 
-          style: 'destructive',
-          onPress: async () => {
-            await resetRatings();
-            alert('ALL FEEDBACK RATINGS HAVE BEEN RESET.');
+    if (typeof window !== 'undefined' && window.confirm) {
+      if (window.confirm("Are you sure you want to permanently delete all team feedback ratings?")) {
+        resetRatings().then(() => {
+          alert('ALL FEEDBACK RATINGS HAVE BEEN RESET.');
+        });
+      }
+    } else {
+      Alert.alert(
+        'RESET ALL RATINGS',
+        'Are you sure you want to permanently delete all team feedback ratings?',
+        [
+          { text: 'CANCEL', style: 'cancel' },
+          { 
+            text: 'RESET', 
+            style: 'destructive',
+            onPress: async () => {
+              await resetRatings();
+              alert('ALL FEEDBACK RATINGS HAVE BEEN RESET.');
+            }
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   return (

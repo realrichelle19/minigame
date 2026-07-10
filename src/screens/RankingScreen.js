@@ -6,7 +6,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RankingScreen({ navigation }) {
-  const { score, totalRounds, victimsSaved, promoteToNextLevel, completedMissions = [], gameElapsedTime, teamProfile, isAdmin, adminName } = useContext(GameContext);
+  const { score, totalRounds, victimsSaved, promoteToNextLevel, completedMissions = [], gameElapsedTime, teamProfile, isAdmin, adminName, debt, timerResetPenalty } = useContext(GameContext);
 
   const numLocked = completedMissions.length;
   let displayScore = 0;
@@ -36,6 +36,9 @@ export default function RankingScreen({ navigation }) {
     displayVillainsCount = 0;
     displayRank = '--';
   }
+
+  // Calculate displayScore as 1600 minus timerResetPenalty
+  displayScore = Math.max(0, 1600 - (timerResetPenalty || 0));
 
   const isRound3Cleared = completedMissions.includes('toxic_spill');
   const titleText = isRound3Cleared ? 'THE VILLAINS ARE DEFEATED' : 'RESUME FIGHTING THE VILLAINS';

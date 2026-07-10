@@ -23,6 +23,7 @@ export const GameProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [feedbackRatings, setFeedbackRatings] = useState([]);
   const [adminName, setAdminName] = useState('CN');
+  const [timerResetPenalty, setTimerResetPenalty] = useState(0);
 
   const currentMission = missions[currentMissionId];
   const currentVillain = currentMission ? {
@@ -67,6 +68,9 @@ export const GameProvider = ({ children }) => {
 
       const savedAdminName = await AsyncStorage.getItem('admin_name');
       if (savedAdminName) setAdminName(savedAdminName);
+
+      const savedTimerResetPenalty = await AsyncStorage.getItem('timer_reset_penalty');
+      if (savedTimerResetPenalty) setTimerResetPenalty(parseInt(savedTimerResetPenalty));
     } catch (e) {
       console.error('Failed to load stats from storage');
     }
@@ -232,6 +236,15 @@ export const GameProvider = ({ children }) => {
   };
 
   const failRound = () => {
+    let penalty = 0;
+    if (currentMissionId === 'rooftop_witness') penalty = 200;
+    else if (currentMissionId === 'vault_breaker') penalty = 225;
+    else if (currentMissionId === 'toxic_spill') penalty = 375;
+
+    const newPenalty = timerResetPenalty + penalty;
+    setTimerResetPenalty(newPenalty);
+    AsyncStorage.setItem('timer_reset_penalty', newPenalty.toString());
+
     if (['rooftop_witness', 'vault_breaker', 'toxic_spill'].includes(currentMissionId)) {
       // Restart the round
       setCurrentRiddleIndex(0);
@@ -267,6 +280,9 @@ export const GameProvider = ({ children }) => {
     setIsGameOver(false);
     setGameWon(false);
     setResetTrigger(prev => prev + 1);
+    
+    setTimerResetPenalty(0);
+    await AsyncStorage.setItem('timer_reset_penalty', '0');
 
     // If starting the 1st round (rooftop_witness), start the timer!
     if (missionId === 'rooftop_witness') {
@@ -348,6 +364,8 @@ export const GameProvider = ({ children }) => {
       setIsAdmin(false);
       await AsyncStorage.removeItem('team_profile');
       await AsyncStorage.removeItem('is_admin');
+      setTimerResetPenalty(0);
+      await AsyncStorage.setItem('timer_reset_penalty', '0');
       await promoteToNextLevel();
     } catch (e) {
       console.error('Failed to logout');
@@ -441,18 +459,34 @@ export const GameProvider = ({ children }) => {
         setGameElapsedTime(elapsed);
         await AsyncStorage.setItem('game_elapsed_time', elapsed.toString());
 
-        // Update all non-completed teams with this clear time and add to attempts history
-        const updatedTeams = teams.map(t => {
-          if (!t.isCompleted) {
-            const teamAttempts = [...(t.attempts || []), elapsed];
-            return { 
-               ...t, 
-               clearTime: elapsed,
-               attempts: teamAttempts
-            };
-          }
-          return t;
-        });
+        let updatedTeams = [];
+        const calculatedPoints = Math.max(0, 1600 - timerResetPenalty);
+        if (isAdmin) {
+          const newAdminRun = {
+            id: 'admin_run_' + Date.now().toString(36),
+            name: adminName || 'CN',
+            clearTime: elapsed,
+            points: calculatedPoints,
+            isCompleted: true,
+            isAdminRun: true,
+            gamesPlayed: 1,
+            attempts: [elapsed]
+          };
+          updatedTeams = [...teams, newAdminRun];
+        } else {
+          updatedTeams = teams.map(t => {
+            if (!t.isCompleted) {
+              const teamAttempts = [...(t.attempts || []), elapsed];
+              return { 
+                 ...t, 
+                 clearTime: elapsed,
+                 points: calculatedPoints,
+                 attempts: teamAttempts
+              };
+            }
+            return t;
+          });
+        }
         setTeams(updatedTeams);
         await AsyncStorage.setItem('registered_teams', JSON.stringify(updatedTeams));
         syncTeamsToSupabase(updatedTeams);
@@ -514,6 +548,7 @@ export const GameProvider = ({ children }) => {
       feedbackRatings,
       submitFeedback,
       resetRatings,
+      timerResetPenalty,
       totalRounds: currentMission ? currentMission.riddles.length : 1
     }}>
       {children}

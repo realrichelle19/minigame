@@ -11,6 +11,7 @@ import {
   Platform 
 } from 'react-native';
 import { GameContext } from '../context/GameContext';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen({ navigation }) {
   const { teamProfile, saveTeamProfile } = useContext(GameContext);
@@ -50,6 +51,17 @@ export default function LoginScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Wrapper behavior="padding" style={styles.flexContainer}>
+        {/* Top Header Navigation Back Button */}
+        <View style={styles.headerBar}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => navigation.navigate('RoleSelection')}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView contentContainerStyle={styles.container}>
           
           {/* Logo Title */}
@@ -213,5 +225,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontStyle: 'italic',
     letterSpacing: 1,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 5,
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  backBtn: {
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#fff',
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 2,
   }
 });
