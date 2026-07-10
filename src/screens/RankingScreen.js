@@ -37,8 +37,13 @@ export default function RankingScreen({ navigation }) {
     displayRank = '--';
   }
 
-  // Calculate displayScore as 1600 minus timerResetPenalty
-  displayScore = Math.max(0, 1600 - (timerResetPenalty || 0));
+  // Calculate displayScore dynamically based on locked rounds progression
+  let baseScore = 0;
+  if (numLocked === 3) baseScore = 1600;
+  else if (numLocked === 2) baseScore = 850;
+  else if (numLocked === 1) baseScore = 400;
+
+  displayScore = Math.max(0, baseScore - (timerResetPenalty || 0));
 
   const isRound3Cleared = completedMissions.includes('toxic_spill');
   const titleText = isRound3Cleared ? 'THE VILLAINS ARE DEFEATED' : 'RESUME FIGHTING THE VILLAINS';
