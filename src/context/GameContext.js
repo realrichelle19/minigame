@@ -8,6 +8,7 @@ export const GameContext = createContext();
 export const GameProvider = ({ children }) => {
   const [currentMissionId, setCurrentMissionId] = useState('toxic_spill');
   const [currentRiddleIndex, setCurrentRiddleIndex] = useState(0);
+  const [solvedRiddleIndices, setSolvedRiddleIndices] = useState([]);
   const [score, setScore] = useState(0);
   const [debt, setDebt] = useState(0);
   const [victimsSaved, setVictimsSaved] = useState(0);
@@ -211,24 +212,52 @@ export const GameProvider = ({ children }) => {
     }
   };
 
+  const nextQuestion = () => {
+    if (currentMission && currentMission.riddles && currentMission.riddles.length > 0) {
+      setCurrentRiddleIndex((prevIndex) => (prevIndex + 1) % currentMission.riddles.length);
+    }
+  };
+
+  const getNextUnsolvedIndex = (fromIndex, solvedArr) => {
+    const total = currentMission?.riddles?.length || 1;
+    for (let i = 1; i <= total; i++) {
+      const nextIdx = (fromIndex + i) % total;
+      if (!solvedArr.includes(nextIdx)) {
+        return nextIdx;
+      }
+    }
+    return fromIndex;
+  };
+
   const answerQuestion = (isCorrect) => {
     if (isCorrect) {
       const mission = missions[currentMissionId];
       const currentRiddle = mission.riddles[currentRiddleIndex];
-      const pointsEarned = currentRiddle.points;
-      const newScore = score + pointsEarned;
-      setScore(newScore);
-
-      // Save 4 victims on easy level, 2 on boss, etc.
-      const victimsPerCorrect = currentMissionId === 'rooftop_witness' ? 4 : 2;
-      setVictimsSaved(victimsSaved + victimsPerCorrect);
       
-      if (currentRiddleIndex + 1 < mission.riddles.length) {
-        setCurrentRiddleIndex(currentRiddleIndex + 1);
-      } else {
+      let newSolved = solvedRiddleIndices;
+      let newScore = score;
+
+      if (!solvedRiddleIndices.includes(currentRiddleIndex)) {
+        newSolved = [...solvedRiddleIndices, currentRiddleIndex];
+        setSolvedRiddleIndices(newSolved);
+
+        const pointsEarned = currentRiddle.points;
+        newScore = score + pointsEarned;
+        setScore(newScore);
+
+        const victimsPerCorrect = currentMissionId === 'rooftop_witness' ? 4 : 2;
+        setVictimsSaved(prev => prev + victimsPerCorrect);
+      }
+
+      // Lock/complete mission ONLY when ALL questions in the current mission are answered correctly
+      if (newSolved.length >= mission.riddles.length) {
         setGameWon(true);
         setIsGameOver(true);
         saveFinalStats(newScore);
+      } else {
+        // Otherwise, move to the next unsolved question and keep timer & mission active!
+        const nextUnsolved = getNextUnsolvedIndex(currentRiddleIndex, newSolved);
+        setCurrentRiddleIndex(nextUnsolved);
       }
       return true;
     }
@@ -248,6 +277,7 @@ export const GameProvider = ({ children }) => {
     if (['rooftop_witness', 'vault_breaker', 'toxic_spill'].includes(currentMissionId)) {
       // Restart the round
       setCurrentRiddleIndex(0);
+      setSolvedRiddleIndices([]);
       setScore(0);
       setResetTrigger(prev => prev + 1);
     } else {
@@ -258,6 +288,7 @@ export const GameProvider = ({ children }) => {
       saveStats(newDebt);
       
       setCurrentRiddleIndex(0);
+      setSolvedRiddleIndices([]);
       setScore(0);
       setVictimsSaved(0);
       setIsGameOver(true);
@@ -275,6 +306,7 @@ export const GameProvider = ({ children }) => {
   const restartGame = async (missionId = 'toxic_spill') => {
     setCurrentMissionId(missionId);
     setCurrentRiddleIndex(0);
+    setSolvedRiddleIndices([]);
     setScore(0);
     setVictimsSaved(0);
     setIsGameOver(false);
@@ -547,13 +579,16 @@ export const GameProvider = ({ children }) => {
     <GameContext.Provider value={{
       currentVillain,
       currentMissionId,
-      currentRoundIndex: currentRiddleIndex,
+      currentRoundIndex: solvedRiddleIndices.length,
+      solvedRiddleIndices,
+      isCurrentRiddleSolved: solvedRiddleIndices.includes(currentRiddleIndex),
       score,
       debt,
       victimsSaved,
       isGameOver,
       gameWon,
       answerQuestion,
+      nextQuestion,
       failRound,
       restartGame,
       resetTrigger,

@@ -12,6 +12,8 @@ export default function GameScreen({ navigation }) {
     score, 
     totalRounds, 
     answerQuestion, 
+    nextQuestion,
+    isCurrentRiddleSolved,
     failRound,
     isGameOver,
     gameWon,
@@ -54,6 +56,10 @@ export default function GameScreen({ navigation }) {
   }, [timeLeft, isGameOver, gameWon, currentVillain]);
 
   const handleSubmit = () => {
+    if (isCurrentRiddleSolved) {
+      alert('You have already solved this riddle! Click NEXT QUESTION to view remaining riddles.');
+      return;
+    }
     const isCorrect = answer.toLowerCase().trim() === currentVillain.riddle.answer.toLowerCase();
     if (isCorrect) {
       setAnswer('');
@@ -61,6 +67,11 @@ export default function GameScreen({ navigation }) {
     } else {
       alert('Wrong answer! Try again!');
     }
+  };
+
+  const handleNextQuestion = () => {
+    setAnswer('');
+    nextQuestion();
   };
 
   if (isGameOver || !currentVillain) return null;
@@ -140,6 +151,12 @@ export default function GameScreen({ navigation }) {
               {/* Bubble Pointer */}
               <View style={styles.bubblePointer} />
               
+              {isCurrentRiddleSolved && (
+                <View style={styles.solvedBadge}>
+                  <Text style={styles.solvedBadgeText}>✓ RIDDLE SOLVED</Text>
+                </View>
+              )}
+
               <Text style={styles.riddleText}>"{currentVillain.riddle.question}"</Text>
               
               <Text style={styles.inputLabel}>YOUR RESPONSE:</Text>
@@ -160,6 +177,16 @@ export default function GameScreen({ navigation }) {
               >
                 <View style={styles.thwipBtn}>
                   <Text style={styles.thwipBtnText}>THWIP!</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.nextBtnShadow}
+                onPress={handleNextQuestion}
+                activeOpacity={0.8}
+              >
+                <View style={styles.nextBtn}>
+                  <Text style={styles.nextBtnText}>NEXT QUESTION ➔</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -421,6 +448,26 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 1,
   },
+  nextBtnShadow: {
+    width: '100%',
+    backgroundColor: '#000',
+    marginTop: 15,
+  },
+  nextBtn: {
+    backgroundColor: '#2563eb', // Rich comic blue
+    borderWidth: 3,
+    borderColor: '#000',
+    padding: 12,
+    transform: [{ translateX: -4 }, { translateY: -4 }],
+    alignItems: 'center',
+  },
+  nextBtnText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 18,
+    fontStyle: 'italic',
+    letterSpacing: 1,
+  },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -454,5 +501,20 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     color: '#b91c1c', // Red
+  },
+  solvedBadge: {
+    backgroundColor: '#16a34a',
+    borderWidth: 2,
+    borderColor: '#000',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  solvedBadgeText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 1,
   }
 });
