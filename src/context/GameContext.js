@@ -10,7 +10,6 @@ export const GameProvider = ({ children }) => {
   const [currentRiddleIndex, setCurrentRiddleIndex] = useState(0);
   const [solvedRiddleIndices, setSolvedRiddleIndices] = useState([]);
   const [score, setScore] = useState(0);
-  const [debt, setDebt] = useState(0);
   const [victimsSaved, setVictimsSaved] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
@@ -24,7 +23,6 @@ export const GameProvider = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [feedbackRatings, setFeedbackRatings] = useState([]);
   const [adminName, setAdminName] = useState('CN');
-  const [timerResetPenalty, setTimerResetPenalty] = useState(0);
 
   const currentMission = missions[currentMissionId];
   const currentVillain = currentMission ? {
@@ -40,11 +38,19 @@ export const GameProvider = ({ children }) => {
 
   const loadStats = async () => {
     try {
-      const savedDebt = await AsyncStorage.getItem('debt');
-      if (savedDebt) setDebt(parseInt(savedDebt));
-      
       const savedCompleted = await AsyncStorage.getItem('completedMissions');
-      if (savedCompleted) setCompletedMissions(JSON.parse(savedCompleted));
+      let loadedCompleted = [];
+      if (savedCompleted) {
+        loadedCompleted = JSON.parse(savedCompleted);
+        setCompletedMissions(loadedCompleted);
+      }
+
+      // Initialize score based on locked completed missions milestone
+      const numLocked = loadedCompleted.length;
+      if (numLocked === 3) setScore(1600);
+      else if (numLocked === 2) setScore(850);
+      else if (numLocked === 1) setScore(400);
+      else setScore(0);
 
       const savedTeam = await AsyncStorage.getItem('teamName');
       if (savedTeam) setTeamNameState(savedTeam);
@@ -69,19 +75,8 @@ export const GameProvider = ({ children }) => {
 
       const savedAdminName = await AsyncStorage.getItem('admin_name');
       if (savedAdminName) setAdminName(savedAdminName);
-
-      const savedTimerResetPenalty = await AsyncStorage.getItem('timer_reset_penalty');
-      if (savedTimerResetPenalty) setTimerResetPenalty(parseInt(savedTimerResetPenalty));
     } catch (e) {
       console.error('Failed to load stats from storage');
-    }
-  };
-
-  const saveStats = async (newDebt) => {
-    try {
-      await AsyncStorage.setItem('debt', newDebt.toString());
-    } catch (e) {
-      console.error('Failed to save debt');
     }
   };
 
@@ -99,7 +94,6 @@ export const GameProvider = ({ children }) => {
         .upsert({ 
           id: profileId, 
           score: updatedStats.score || 0,
-          debt: updatedStats.debt || 0,
           completed_missions: updatedStats.completedMissions || [],
           team_name: updatedStats.teamName || '',
           updated_at: new Date().toISOString()
@@ -139,7 +133,7 @@ export const GameProvider = ({ children }) => {
       
       // Sync to Supabase
       syncToSupabase({
-        debt,
+        score,
         completedMissions,
         teamName: formattedName
       });
@@ -192,7 +186,7 @@ export const GameProvider = ({ children }) => {
       await AsyncStorage.removeItem('game_elapsed_time');
 
       syncToSupabase({
-        debt,
+        score: 0,
         completedMissions: [],
         teamName: ''
       });
@@ -232,18 +226,12 @@ export const GameProvider = ({ children }) => {
   const answerQuestion = (isCorrect) => {
     if (isCorrect) {
       const mission = missions[currentMissionId];
-      const currentRiddle = mission.riddles[currentRiddleIndex];
       
       let newSolved = solvedRiddleIndices;
-      let newScore = score;
 
       if (!solvedRiddleIndices.includes(currentRiddleIndex)) {
         newSolved = [...solvedRiddleIndices, currentRiddleIndex];
         setSolvedRiddleIndices(newSolved);
-
-        const pointsEarned = currentRiddle.points;
-        newScore = score + pointsEarned;
-        setScore(newScore);
 
         const victimsPerCorrect = currentMissionId === 'rooftop_witness' ? 4 : 2;
         setVictimsSaved(prev => prev + victimsPerCorrect);
@@ -253,7 +241,7 @@ export const GameProvider = ({ children }) => {
       if (newSolved.length >= mission.riddles.length) {
         setGameWon(true);
         setIsGameOver(true);
-        saveFinalStats(newScore);
+        saveFinalStats();
       } else {
         // Otherwise, move to the next unsolved question and keep timer & mission active!
         const nextUnsolved = getNextUnsolvedIndex(currentRiddleIndex, newSolved);
@@ -265,38 +253,27 @@ export const GameProvider = ({ children }) => {
   };
 
   const failRound = () => {
-    let penalty = 0;
-    if (currentMissionId === 'rooftop_witness') penalty = 200;
-    else if (currentMissionId === 'vault_breaker') penalty = 225;
-    else if (currentMissionId === 'toxic_spill') penalty = 375;
-
-    const newPenalty = timerResetPenalty + penalty;
-    setTimerResetPenalty(newPenalty);
-    AsyncStorage.setItem('timer_reset_penalty', newPenalty.toString());
+    const numLocked = completedMissions.length;
+    const lockedScore = numLocked === 3 ? 1600 : numLocked === 2 ? 850 : numLocked === 1 ? 400 : 0;
 
     if (['rooftop_witness', 'vault_breaker', 'toxic_spill'].includes(currentMissionId)) {
       // Restart the round
       setCurrentRiddleIndex(0);
       setSolvedRiddleIndices([]);
-      setScore(0);
+      setScore(lockedScore);
       setResetTrigger(prev => prev + 1);
     } else {
       // Standard game over
-      const debtAdded = Math.floor(score / 2);
-      const newDebt = debt + debtAdded;
-      setDebt(newDebt);
-      saveStats(newDebt);
-      
       setCurrentRiddleIndex(0);
       setSolvedRiddleIndices([]);
-      setScore(0);
+      setScore(lockedScore);
       setVictimsSaved(0);
       setIsGameOver(true);
       setGameWon(false);
       
       // Sync failure stats to Supabase
       syncToSupabase({
-        debt: newDebt,
+        score: lockedScore,
         completedMissions,
         teamName
       });
@@ -307,14 +284,16 @@ export const GameProvider = ({ children }) => {
     setCurrentMissionId(missionId);
     setCurrentRiddleIndex(0);
     setSolvedRiddleIndices([]);
-    setScore(0);
+    
+    const numLocked = completedMissions.length;
+    const lockedScore = numLocked === 3 ? 1600 : numLocked === 2 ? 850 : numLocked === 1 ? 400 : 0;
+    setScore(lockedScore);
+    
     setVictimsSaved(0);
     setIsGameOver(false);
     setGameWon(false);
     setResetTrigger(prev => prev + 1);
     
-    setTimerResetPenalty(0);
-    await AsyncStorage.setItem('timer_reset_penalty', '0');
     await AsyncStorage.removeItem('admin_run_id');
 
     // If starting the 1st round (rooftop_witness), start the timer!
@@ -358,7 +337,7 @@ export const GameProvider = ({ children }) => {
 
     // Sync to Supabase
     syncToSupabase({
-      debt,
+      score: 0,
       completedMissions: [],
       teamName
     });
@@ -399,8 +378,6 @@ export const GameProvider = ({ children }) => {
       await AsyncStorage.removeItem('team_profile');
       await AsyncStorage.removeItem('is_admin');
       await AsyncStorage.removeItem('admin_run_id');
-      setTimerResetPenalty(0);
-      await AsyncStorage.setItem('timer_reset_penalty', '0');
       await promoteToNextLevel();
     } catch (e) {
       console.error('Failed to logout');
@@ -478,7 +455,7 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const saveFinalStats = async (finalScore) => {
+  const saveFinalStats = async () => {
     try {
       const newCompleted = [...completedMissions];
       if (!newCompleted.includes(currentMissionId)) {
@@ -487,14 +464,15 @@ export const GameProvider = ({ children }) => {
         await AsyncStorage.setItem('completedMissions', JSON.stringify(newCompleted));
       }
 
-      // Calculate dynamic base score based on number of completed rounds
+      // Calculate milestone base score based on number of completed rounds
       let baseScore = 0;
       const numLocked = newCompleted.length;
       if (numLocked === 3) baseScore = 1600;
       else if (numLocked === 2) baseScore = 850;
       else if (numLocked === 1) baseScore = 400;
 
-      const calculatedPoints = Math.max(0, baseScore - timerResetPenalty);
+      const calculatedPoints = baseScore;
+      setScore(calculatedPoints);
 
       // If completing the 3rd round (toxic_spill), save the timer!
       let elapsed = null;
@@ -554,8 +532,7 @@ export const GameProvider = ({ children }) => {
 
       // Sync success stats to Supabase
       syncToSupabase({
-        score: finalScore,
-        debt,
+        score: calculatedPoints,
         completedMissions: newCompleted,
         teamName
       });
@@ -565,7 +542,7 @@ export const GameProvider = ({ children }) => {
       
       parsedStats.gamesPlayed += 1;
       parsedStats.gamesWon += 1;
-      parsedStats.highestScore = Math.max(parsedStats.highestScore, finalScore);
+      parsedStats.highestScore = Math.max(parsedStats.highestScore, calculatedPoints);
       parsedStats.totalVictimsSaved += victimsSaved + (currentMissionId === 'rooftop_witness' ? 4 : 2);
       parsedStats.totalVillainsDefeated += 1;
       
@@ -583,7 +560,6 @@ export const GameProvider = ({ children }) => {
       solvedRiddleIndices,
       isCurrentRiddleSolved: solvedRiddleIndices.includes(currentRiddleIndex),
       score,
-      debt,
       victimsSaved,
       isGameOver,
       gameWon,
@@ -611,10 +587,10 @@ export const GameProvider = ({ children }) => {
       feedbackRatings,
       submitFeedback,
       resetRatings,
-      timerResetPenalty,
       totalRounds: currentMission ? currentMission.riddles.length : 1
     }}>
       {children}
     </GameContext.Provider>
   );
 };
+

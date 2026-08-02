@@ -79,7 +79,6 @@ export default function GameScreen({ navigation }) {
   const filledSegments = currentVillain?.threatLevel === 'MINIMUM' ? 2 : 
                          currentVillain?.threatLevel === 'MEDIUM' ? 4 : 6;
   const segments = Array.from({ length: 6 }).map((_, i) => i < filledSegments);
-  const potentialPenalty = Math.floor(score / 2);
 
   const Wrapper = Platform.OS === 'web' ? View : KeyboardAvoidingView;
   const wrapperProps = Platform.OS === 'web' ? {} : { behavior: Platform.OS === 'ios' ? 'padding' : 'height' };
@@ -194,17 +193,10 @@ export default function GameScreen({ navigation }) {
 
           {/* Stat Boxes */}
           <View style={styles.statsRow}>
-            <View style={[styles.statBoxShadow, { flex: 1, marginRight: 15 }]}>
+            <View style={[styles.statBoxShadow, { width: '100%' }]}>
               <View style={styles.statBox}>
                 <Text style={styles.statBoxLabel}>CURRENT POINTS</Text>
                 <Text style={styles.statBoxPoints}>{score}</Text>
-              </View>
-            </View>
-            
-            <View style={[styles.statBoxShadow, { flex: 1 }]}>
-              <View style={styles.statBox}>
-                <Text style={styles.statBoxLabel}>POTENTIAL PENALTY</Text>
-                <Text style={styles.statBoxPenalty}>-{potentialPenalty}</Text>
               </View>
             </View>
           </View>
@@ -496,11 +488,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     color: '#3b82f6', // Blue
-  },
-  statBoxPenalty: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#b91c1c', // Red
   },
   solvedBadge: {
     backgroundColor: '#16a34a',

@@ -59,7 +59,7 @@ export default function RulesScreen({ navigation }) {
             <View style={styles.divider} />
 
             <Text style={styles.ruleTitle}>3. COST OF FAILURE</Text>
-            <Text style={styles.ruleText}>If the timer reaches zero, you lose all progress and restart from Round 1. You also accrue DEBT (lose half your earned points)!</Text>
+            <Text style={styles.ruleText}>If the timer reaches zero, you restart the current round to try again.</Text>
             
             <View style={styles.divider} />
 

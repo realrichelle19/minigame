@@ -6,7 +6,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function VictoryScreen({ navigation }) {
-  const { score, totalRounds, victimsSaved, restartGame, debt, timerResetPenalty } = useContext(GameContext);
+  const { score, totalRounds, victimsSaved, restartGame } = useContext(GameContext);
 
   const handleRestart = () => {
     restartGame();
@@ -46,7 +46,7 @@ export default function VictoryScreen({ navigation }) {
 
             <Text style={styles.label}>TOTAL POINTS</Text>
             <View style={styles.pointsRow}>
-              <Text style={styles.pointsValue}>{Math.max(0, 1600 - (timerResetPenalty || 0))}</Text>
+              <Text style={styles.pointsValue}>1600</Text>
               <Ionicons name="star" size={32} color="#b91c1c" />
             </View>
 

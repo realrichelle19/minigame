@@ -6,7 +6,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
-  const { completedMissions = [], isAdmin, teams = [], feedbackRatings = [], adminName, saveAdminName, deleteTeam, debt, timerResetPenalty } = useContext(GameContext);
+  const { completedMissions = [], isAdmin, teams = [], feedbackRatings = [], adminName, saveAdminName, deleteTeam } = useContext(GameContext);
 
   const handleStartMission = () => {
     if (isAdmin) {
@@ -52,7 +52,7 @@ export default function HomeScreen({ navigation }) {
   else if (numLocked === 2) baseScore = 850;
   else if (numLocked === 1) baseScore = 400;
 
-  const vigilanteStatsScore = Math.max(0, baseScore - (timerResetPenalty || 0));
+  const vigilanteStatsScore = baseScore;
 
   return (
     <SafeAreaView style={styles.safeArea}>

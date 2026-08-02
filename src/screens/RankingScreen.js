@@ -6,7 +6,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RankingScreen({ navigation }) {
-  const { score, totalRounds, victimsSaved, promoteToNextLevel, completedMissions = [], gameElapsedTime, teamProfile, isAdmin, adminName, debt, timerResetPenalty } = useContext(GameContext);
+  const { score, totalRounds, victimsSaved, promoteToNextLevel, completedMissions = [], gameElapsedTime, teamProfile, isAdmin, adminName } = useContext(GameContext);
 
   const numLocked = completedMissions.length;
   let displayScore = 0;
@@ -37,14 +37,6 @@ export default function RankingScreen({ navigation }) {
     displayRank = '--';
   }
 
-  // Calculate displayScore dynamically based on locked rounds progression
-  let baseScore = 0;
-  if (numLocked === 3) baseScore = 1600;
-  else if (numLocked === 2) baseScore = 850;
-  else if (numLocked === 1) baseScore = 400;
-
-  displayScore = Math.max(0, baseScore - (timerResetPenalty || 0));
-
   const isRound3Cleared = completedMissions.includes('toxic_spill');
   const titleText = isRound3Cleared ? 'THE VILLAINS ARE DEFEATED' : 'RESUME FIGHTING THE VILLAINS';
   const statusText = isRound3Cleared ? 'MISSION ACCOMPLISHED' : 'MISSION PENDING';
@@ -60,13 +52,14 @@ export default function RankingScreen({ navigation }) {
 
   let btnText = 'DEFEAT ALL THE VILLAINS';
   if (numLocked === 3) {
-    btnText = 'PROMOTED TO NEXT LEVEL';
+    btnText = 'PROMOTE TO NEXT LEVEL';
   } else if (numLocked === 1 || numLocked === 2) {
     btnText = 'RESUME THE MISSION';
   }
 
   const handleReplay = () => {
     if (numLocked === 3) {
+      alert("Congratulations for clearing this round! You have been promoted to the next level.");
       promoteToNextLevel();
     }
     navigation.navigate('Investigations');
