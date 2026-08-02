@@ -5,10 +5,10 @@ import Header from '../components/Header';
 import BottomNavBar from '../components/BottomNavBar';
 
 export default function HeroesScreen({ navigation }) {
-  const { 
-    teams = [], 
-    deleteTeam, 
-    markTeamCompleted, 
+  const {
+    teams = [],
+    deleteTeam,
+    markTeamCompleted,
     completedMissions = [],
     teamProfile,
     logoutProfile,
@@ -71,11 +71,6 @@ export default function HeroesScreen({ navigation }) {
                 </View>
 
                 <Text style={styles.teamValue}>{t.name}</Text>
-                
-                <View style={styles.statsRosterRow}>
-                  <Text style={styles.teamStatsLabel}>GAMES PLAYED: </Text>
-                  <Text style={styles.teamStatsValue}>{t.gamesPlayed || 1}</Text>
-                </View>
 
                 {((t.attempts && t.attempts.length > 0) || (t.clearTime !== null && t.clearTime !== undefined)) ? (
                   <View style={styles.attemptsContainer}>
@@ -93,7 +88,7 @@ export default function HeroesScreen({ navigation }) {
                 <View style={styles.actionsContainer}>
                   {/* Complete Task Option (only shows if all 3 rounds are locked and team isn't already completed) */}
                   {allRoundsCompleted && !t.isCompleted && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.completeBtnShadow}
                       onPress={() => markTeamCompleted(t.id)}
                       activeOpacity={0.8}
@@ -106,7 +101,7 @@ export default function HeroesScreen({ navigation }) {
 
                   {/* Delete Button (Admin Only) */}
                   {isAdmin && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.deleteBtnShadow}
                       onPress={() => handleDeleteTeam(t.id, t.name)}
                       activeOpacity={0.8}
