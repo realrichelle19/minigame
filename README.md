@@ -15,7 +15,7 @@ A comic-book style Neo-Brutalist superhero minigame built with **React Native**,
 - **⏱️ Spidey-Sense Countdown Timers**: Each mission features a countdown timer tailored to villain threat levels. If the timer expires, the round resets smoothly.
 - **👥 Dual Role System**:
   - **Player Mode**: Team profile registration, sequential investigation missions, speedrun timers, and classified report downloads.
-  - **Admin Console**: Live team rankings, score records deletion, feedback rating dashboard, and reset capabilities.
+  - **Admin Console**: Live team rankings and score records deletion capabilities.
 - **📊 Leaderboards & Speedruns**: Ranks teams based on total completion clear times and milestone scores.
 - **📄 Classified Mission Report Cards**: Generate and share downloadable/exportable mission reports upon game completion.
 - **☁️ Offline-First Persistence + Supabase Sync**: Games play offline seamlessly using `AsyncStorage` and automatically upsert stats/leaderboards to Supabase when online.
@@ -92,7 +92,6 @@ A comic-book style Neo-Brutalist superhero minigame built with **React Native**,
 5. **Riddle Challenge (`GameScreen`)**: Answer villain riddles before the Spidey-Sense timer expires.
 6. **Victory & Ranking (`VictoryScreen` / `RankingScreen`)**: View final score (1600 PTS), clear times, and export classified report cards.
 7. **Leaderboard (`LeaderboardScreen`)**: View global speedrun rankings.
-8. **Feedback Ratings (`RatingsScreen`)**: Rate event content, logistics, and volunteers.
 
 ---
 

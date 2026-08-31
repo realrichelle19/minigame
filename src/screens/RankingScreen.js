@@ -230,7 +230,13 @@ RANK ASSIGNED: ${displayRank}
 
                   {/* Stamp Graphic */}
                   <View style={styles.classifiedStamp}>
-                    <Text style={styles.classifiedStampText}>CLASSIFIED</Text>
+                    <View style={styles.classifiedStampInner}>
+                      <Text style={styles.stampStar}>★ ★ ★</Text>
+                      <View style={styles.stampBanner}>
+                        <Text style={styles.classifiedStampText}>CLASSIFIED</Text>
+                      </View>
+                      <Text style={styles.stampStar}>★ ★ ★</Text>
+                    </View>
                   </View>
 
                   {/* Team Profile details */}
@@ -292,62 +298,14 @@ RANK ASSIGNED: ${displayRank}
                   <TouchableOpacity 
                     style={styles.actionBtnShadow}
                     onPress={() => {
-                      try {
-                        const groupName = isAdmin ? 'Admin' : (teamProfile?.teamName || 'ANONYMOUS VIGILANTES');
-                        const timeStr = displayTime !== null && displayTime !== undefined ? formatTime(displayTime) : '--:--';
-
-                        let reportText = '';
-                        if (isAdmin) {
-                          reportText = `============= CLASSIFIED MISSION REPORT =============
-VIGILANTE GROUP: Admin
-ADMIN NAME: ${adminName || 'CN'}
-STATUS: ${statusText}
-TOTAL POINTS: ${displayScore} PTS
-VILLAINS CAPTURED: ${displayVillainsCount}/3
-SPEEDRUN DURATION: ${timeStr}
-RANK ASSIGNED: ${displayRank}
-=====================================================`;
-                        } else {
-                          const teamLeader = teamProfile?.leaderName || 'N/A';
-                          const membersCount = teamProfile?.membersCount || '0';
-                          reportText = `============= CLASSIFIED MISSION REPORT =============
-TEAM NAME: ${groupName}
-TEAM LEADER: ${teamLeader}
-TEAM SIZE: ${membersCount} MEMBER(S)
-STATUS: ${statusText}
-TOTAL POINTS: ${displayScore} PTS
-VILLAINS CAPTURED: ${displayVillainsCount}/3
-SPEEDRUN DURATION: ${timeStr}
-RANK ASSIGNED: ${displayRank}
-=====================================================`;
-                        }
-
-                        if (Platform.OS === 'web') {
-                          const element = document.createElement("a");
-                          const file = new Blob([reportText], { type: 'text/plain' });
-                          element.href = URL.createObjectURL(file);
-                          element.download = `mission_report_${groupName.replace(/\s+/g, '_')}.txt`;
-                          document.body.appendChild(element);
-                          element.click();
-                          document.body.removeChild(element);
-                        } else {
-                          Share.share({
-                            message: reportText,
-                            title: 'Classified Mission Report',
-                          });
-                        }
-                      } catch (err) {
-                        console.log('Download error:', err.message);
-                      }
-                      
                       setShareModalVisible(false);
-                      navigation.navigate('Ratings');
+                      navigation.navigate('Home');
                     }}
                     activeOpacity={0.8}
                   >
                     <View style={styles.actionBtn}>
-                      <Ionicons name="star" size={20} color="#fff" style={styles.btnIcon} />
-                      <Text style={styles.actionBtnText}>RATE CAMPUS QUEST '26</Text>
+                      <Ionicons name="home-outline" size={20} color="#fff" style={styles.btnIcon} />
+                      <Text style={styles.actionBtnText}>BACK TO HOME</Text>
                     </View>
                   </TouchableOpacity>
 
@@ -670,20 +628,50 @@ const styles = StyleSheet.create({
   },
   classifiedStamp: {
     position: 'absolute',
-    top: 60,
+    top: 55,
     right: 20,
-    borderWidth: 3,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2.5,
     borderColor: '#dc2626',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    transform: [{ rotate: '15deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '-12deg' }],
+    backgroundColor: 'rgba(220, 38, 38, 0.03)',
     zIndex: 5,
+  },
+  classifiedStampInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 1.5,
+    borderColor: '#dc2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  stampBanner: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#dc2626',
+    paddingVertical: 1,
+    paddingHorizontal: 2,
+    marginVertical: 2,
+    width: '100%',
+    alignItems: 'center',
   },
   classifiedStampText: {
     color: '#dc2626',
     fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 1.5,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textAlign: 'center',
+  },
+  stampStar: {
+    color: '#dc2626',
+    fontSize: 6.5,
+    letterSpacing: 1,
   },
   reportSection: {
     marginBottom: 12,

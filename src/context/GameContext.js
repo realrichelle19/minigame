@@ -21,7 +21,6 @@ export const GameProvider = ({ children }) => {
   const [gameElapsedTime, setGameElapsedTime] = useState(null);
   const [teamProfile, setTeamProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [feedbackRatings, setFeedbackRatings] = useState([]);
   const [adminName, setAdminName] = useState('CN');
 
   const currentMission = missions[currentMissionId];
@@ -69,9 +68,6 @@ export const GameProvider = ({ children }) => {
 
       const savedAdmin = await AsyncStorage.getItem('is_admin');
       if (savedAdmin) setIsAdmin(JSON.parse(savedAdmin));
-
-      const savedFeedback = await AsyncStorage.getItem('feedback_ratings');
-      if (savedFeedback) setFeedbackRatings(JSON.parse(savedFeedback));
 
       const savedAdminName = await AsyncStorage.getItem('admin_name');
       if (savedAdminName) setAdminName(savedAdminName);
@@ -402,58 +398,7 @@ export const GameProvider = ({ children }) => {
     }
   };
 
-  const resetRatings = async () => {
-    try {
-      setFeedbackRatings([]);
-      await AsyncStorage.removeItem('feedback_ratings');
-      await supabase.from('feedback_ratings').delete().neq('id', 'placeholder');
-    } catch (e) {
-      console.error('Failed to reset feedback ratings', e.message);
-    }
-  };
 
-  const submitFeedback = async (ratings) => {
-    try {
-      const newRating = {
-        id: 'rate_' + Date.now().toString(36),
-        teamName: isAdmin ? (adminName || 'CN') : (teamProfile?.teamName || 'ANONYMOUS'),
-        membersCount: isAdmin ? 0 : (teamProfile?.membersCount || 0),
-        overallExperience: ratings.overallExperience,
-        eventContent: ratings.eventContent,
-        logistics: ratings.logistics,
-        volunteers: ratings.volunteers,
-        futureInterests: ratings.futureInterests,
-        createdAt: new Date().toISOString()
-      };
-      
-      const updatedRatings = [...feedbackRatings, newRating];
-      setFeedbackRatings(updatedRatings);
-      await AsyncStorage.setItem('feedback_ratings', JSON.stringify(updatedRatings));
-
-      // Sync ratings to Supabase
-      let profileId = await AsyncStorage.getItem('supabase_profile_id');
-      if (!profileId) {
-        profileId = 'player_' + Math.random().toString(36).substring(2, 15);
-        await AsyncStorage.setItem('supabase_profile_id', profileId);
-      }
-      await supabase
-        .from('feedback_ratings')
-        .upsert({
-          id: newRating.id,
-          profile_id: profileId,
-          team_name: newRating.teamName,
-          members_count: newRating.membersCount,
-          overall_experience: newRating.overallExperience,
-          event_content: newRating.eventContent,
-          logistics: newRating.logistics,
-          volunteers: newRating.volunteers,
-          future_interests: newRating.futureInterests,
-          created_at: newRating.createdAt
-        });
-    } catch (err) {
-      console.log('Feedback submit Supabase sync warning:', err.message);
-    }
-  };
 
   const saveFinalStats = async () => {
     try {
@@ -584,9 +529,6 @@ export const GameProvider = ({ children }) => {
       saveAdminLogin,
       adminName,
       saveAdminName,
-      feedbackRatings,
-      submitFeedback,
-      resetRatings,
       totalRounds: currentMission ? currentMission.riddles.length : 1
     }}>
       {children}

@@ -175,7 +175,7 @@ export default function GameScreen({ navigation }) {
                 activeOpacity={0.8}
               >
                 <View style={styles.thwipBtn}>
-                  <Text style={styles.thwipBtnText}>THWIP!</Text>
+                  <Text style={styles.thwipBtnText}>SUBMIT</Text>
                 </View>
               </TouchableOpacity>
 

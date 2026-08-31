@@ -6,7 +6,7 @@ import BottomNavBar from '../components/BottomNavBar';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HomeScreen({ navigation }) {
-  const { completedMissions = [], isAdmin, teams = [], feedbackRatings = [], adminName, saveAdminName, deleteTeam } = useContext(GameContext);
+  const { completedMissions = [], isAdmin, teams = [], adminName, saveAdminName, deleteTeam } = useContext(GameContext);
 
   const handleStartMission = () => {
     if (isAdmin) {
@@ -95,107 +95,74 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Admin Leaderboard & Ratings Sections */}
+          {/* Admin Leaderboard Section */}
           {isAdmin && (
-            <>
-              {/* Leaderboard Card */}
-              <View style={styles.adminSectionCardShadow}>
-                <View style={styles.adminSectionCard}>
-                  <View style={styles.statsHeader}>
-                    <Ionicons name="trophy" size={24} color="#b91c1c" />
-                    <Text style={styles.statsTitle}>ADMIN LEADERBOARD</Text>
-                  </View>
+            <View style={styles.adminSectionCardShadow}>
+              <View style={styles.adminSectionCard}>
+                <View style={styles.statsHeader}>
+                  <Ionicons name="trophy" size={24} color="#b91c1c" />
+                  <Text style={styles.statsTitle}>ADMIN LEADERBOARD</Text>
+                </View>
 
-                  {allTeamsSorted.length > 0 ? (
-                    allTeamsSorted.map((t, idx) => {
-                      const hasCleared = t.clearTime !== null && t.clearTime !== undefined;
-                      return (
-                        <View key={t.id} style={[styles.leaderboardRowContainer, t.isAdminRun && { backgroundColor: '#fef2f2', paddingHorizontal: 6 }]}>
-                          <View style={styles.leaderboardRow}>
-                            <View style={styles.leaderboardTeamInfo}>
-                              <View 
-                                style={[
-                                  styles.rankBadgeMini, 
-                                  { backgroundColor: t.isAdminRun ? '#ef4444' : (hasCleared ? getRankBadgeColor(idx) : '#e5e7eb') }
-                                ]}
-                              >
-                                <Text style={[styles.rankBadgeMiniText, t.isAdminRun && { color: '#fff' }]}>
-                                  {t.isAdminRun ? 'A' : (hasCleared ? `#${idx + 1}` : 'U')}
-                                </Text>
+                {allTeamsSorted.length > 0 ? (
+                  allTeamsSorted.map((t, idx) => {
+                    const hasCleared = t.clearTime !== null && t.clearTime !== undefined;
+                    return (
+                      <View key={t.id} style={[styles.leaderboardRowContainer, t.isAdminRun && { backgroundColor: '#fef2f2', paddingHorizontal: 6 }]}>
+                        <View style={styles.leaderboardRow}>
+                          <View style={styles.leaderboardTeamInfo}>
+                            <View 
+                              style={[
+                                styles.rankBadgeMini, 
+                                { backgroundColor: t.isAdminRun ? '#ef4444' : (hasCleared ? getRankBadgeColor(idx) : '#e5e7eb') }
+                              ]}
+                            >
+                              <Text style={[styles.rankBadgeMiniText, t.isAdminRun && { color: '#fff' }]}>
+                                {t.isAdminRun ? 'A' : (hasCleared ? `#${idx + 1}` : 'U')}
+                              </Text>
+                            </View>
+                            <Text style={styles.leaderboardTeamName}>{t.name}</Text>
+                            {t.isAdminRun && (
+                              <View style={styles.adminBadgeMini}>
+                                <Text style={styles.adminBadgeMiniText}>ADMIN RUN</Text>
                               </View>
-                              <Text style={styles.leaderboardTeamName}>{t.name}</Text>
-                              {t.isAdminRun && (
-                                <View style={styles.adminBadgeMini}>
-                                  <Text style={styles.adminBadgeMiniText}>ADMIN RUN</Text>
-                                </View>
-                              )}
-                            </View>
-                            
-                            <View style={styles.leaderboardStatusInfo}>
-                              {t.isCompleted && (
-                                <View style={styles.completedBadgeMini}>
-                                  <Text style={styles.completedBadgeMiniText}>COMPLETED</Text>
-                                </View>
-                              )}
-                              <Text style={[styles.leaderboardPointsMini, t.isAdminRun ? styles.adminPointsHighlight : styles.playerPointsHighlight]}>
-                                {t.points !== undefined ? `${t.points} PTS` : 'N/A'}
-                              </Text>
-                              <Text style={styles.leaderboardTime}>
-                                {hasCleared ? formatTime(t.clearTime) : 'PENDING'}
-                              </Text>
-                            </View>
+                            )}
                           </View>
-
-                          {/* Delete Option */}
-                          <TouchableOpacity 
-                            style={styles.deleteBtnMiniShadow}
-                            onPress={() => deleteTeam(t.id)}
-                            activeOpacity={0.8}
-                          >
-                            <View style={styles.deleteBtnMini}>
-                              <Ionicons name="trash-outline" size={14} color="#fff" style={{ marginRight: 4 }} />
-                              <Text style={styles.deleteBtnMiniText}>DELETE RECORD</Text>
-                            </View>
-                          </TouchableOpacity>
+                          
+                          <View style={styles.leaderboardStatusInfo}>
+                            {t.isCompleted && (
+                              <View style={styles.completedBadgeMini}>
+                                <Text style={styles.completedBadgeMiniText}>COMPLETED</Text>
+                              </View>
+                            )}
+                            <Text style={[styles.leaderboardPointsMini, t.isAdminRun ? styles.adminPointsHighlight : styles.playerPointsHighlight]}>
+                              {t.points !== undefined ? `${t.points} PTS` : 'N/A'}
+                            </Text>
+                            <Text style={styles.leaderboardTime}>
+                              {hasCleared ? formatTime(t.clearTime) : 'PENDING'}
+                            </Text>
+                          </View>
                         </View>
-                      );
-                    })
-                  ) : (
-                    <Text style={styles.noDataText}>NO TEAMS REGISTERED</Text>
-                  )}
-                </View>
-              </View>
 
-              {/* Ratings Card */}
-              <View style={styles.adminSectionCardShadow}>
-                <View style={styles.adminSectionCard}>
-                  <View style={styles.statsHeader}>
-                    <Ionicons name="star" size={24} color="#b91c1c" />
-                    <Text style={styles.statsTitle}>FEEDBACK RATINGS</Text>
-                  </View>
-
-                  {feedbackRatings && feedbackRatings.length > 0 ? (
-                    feedbackRatings.map((rate) => (
-                      <View key={rate.id} style={styles.ratingCardItem}>
-                        <View style={styles.ratingRowHeader}>
-                          <Text style={styles.ratingTeamName}>{rate.teamName}</Text>
-                          <Text style={styles.ratingMembers}>{rate.membersCount} MEM</Text>
-                        </View>
-                        <View style={styles.ratingGrid}>
-                          <Text style={styles.ratingGridText}>EXP: {rate.overallExperience}/5</Text>
-                          <Text style={styles.ratingGridText}>CON: {rate.eventContent}/5</Text>
-                          <Text style={styles.ratingGridText}>LOG: {rate.logistics}/5</Text>
-                          <Text style={styles.ratingGridText}>VOL: {rate.volunteers}/5</Text>
-                          <Text style={styles.ratingGridText}>FUT: {rate.futureInterests}/5</Text>
-                        </View>
+                        {/* Delete Option */}
+                        <TouchableOpacity 
+                          style={styles.deleteBtnMiniShadow}
+                          onPress={() => deleteTeam(t.id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.deleteBtnMini}>
+                            <Ionicons name="trash-outline" size={14} color="#fff" style={{ marginRight: 4 }} />
+                            <Text style={styles.deleteBtnMiniText}>DELETE RECORD</Text>
+                          </View>
+                        </TouchableOpacity>
                       </View>
-                    ))
-                  ) : (
-                    <Text style={styles.noDataText}>NO RATINGS SUBMITTED YET</Text>
-                  )}
-                </View>
+                    );
+                  })
+                ) : (
+                  <Text style={styles.noDataText}>NO TEAMS REGISTERED</Text>
+                )}
               </View>
-            </>
+            </View>
           )}
           
         </View>
@@ -372,40 +339,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 10,
   },
-  ratingCardItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  ratingRowHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  ratingTeamName: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#000',
-  },
-  ratingMembers: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: '#000',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  ratingGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  ratingGridText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#666',
-  },
+
   leaderboardRowContainer: {
     borderBottomWidth: 2,
     borderBottomColor: '#000',
